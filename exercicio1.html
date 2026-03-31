@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Modern Clear</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+        --bg-body: #f4f7fb;
+        --bg-calc: #ffffff;
+        --text-main: #1e293b;
+        --text-secondary: #94a3b8;
+        --accent: #7c3aed;
+        --accent-hover: #6d28d9;
+        --btn-gray: #f8fafc;
+        --btn-gray-hover: #f1f5f9;
+        --shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.05), 0 10px 10px -5px rgba(0, 0, 0, 0.02);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        /* Container da Calculadora */
+        .calculator {
+            background: var(--bg-calc);
+            width: 340px;
+            padding: 32px;
+            border-radius: 40px;
+            box-shadow: var(--shadow);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            position: relative; /* Necessário para o painel subir dentro dela */
+            overflow: hidden;   /* Garante que o painel não "vaze" para fora */
+        }
+
+        /* Visor */
+        .display {
+            text-align: right;
+            margin-bottom: 30px;
+            padding: 0 10px;
+        }
+
+        .display .history {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            min-height: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        .display .current {
+            color: var(--text-main);
+            font-size: 2.5rem;
+            font-weight: 700;
+        }
+
+        /* Teclado */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+        }
+
+        button {
+            aspect-ratio: 1;
+            border: none;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: var(--btn-gray);
+            color: var(--text-main);
+        }
+
+        button:hover {
+            background: var(--btn-gray-hover);
+            transform: translateY(-2px);
+        }
+
+        /* Estilos de botões específicos */
+        button.operator { background: #f5f3ff; color: var(--accent); }
+        button.equals { background: var(--accent); color: white; }
+        button.clear { color: #ef4444; background: #fef2f2; }
+
+        /* ============================================================
+        PAINEL DE HISTÓRICO (O QUE SOBE)
+        ============================================================ */
+
+        .painel-historico {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0; /* Começa escondido */
+            background: #ffffff;
+            z-index: 100;
+            transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            border-radius: 30px 30px 0 0;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* Classe que o JS adiciona para abrir */
+        .painel-historico.aberto {
+            height: 85%; 
+        }
+
+        /* Cabeçalho do Histórico */
+        .header-historico {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-historico span {
+            font-weight: 700;
+            color: var(--accent);
+        }
+
+        .header-historico button {
+            aspect-ratio: auto;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            font-size: 1rem;
+        }
+
+        /* Lista de Itens com Scroll */
+        #lista-historico-itens {
+            flex: 1; /* Ocupa todo o espaço do meio */
+            overflow-y: auto; /* Permite o scroll vertical */
+            padding: 0 20px;
+        }
+
+        .item-historico {
+            padding: 15px 10px;
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            text-align: right;
+        }
+
+        /* Botão de Limpar no fundo */
+        .btn-limpar-local {
+            aspect-ratio: auto; /* Tira o formato quadrado do botão comum */
+            width: calc(100% - 40px);
+            margin: 15px 20px 25px 20px;
+            padding: 15px;
+            background: #fff1f2;
+            color: #e11d48;
+            border-radius: 15px;
+            font-weight: 700;
+            font-size: 1rem;
+        }
+
+        .btn-limpar-local:hover {
+            background: #ffe4e6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="calculator">
+        <div class="display">
+            <div class="history" id="history">0 </div>
+            <div class="current" id="current">0 </div>
+        </div>
+        
+        <div id="painel-historico" class="painel-historico">
+            <div class="header-historico">
+                <span>Histórico Recente</span>
+                <button onclick="fecharHistorico()">×</button>
+            </div>
+
+            <div id="lista-historico-itens"></div>
+
+            <button class="btn-limpar-local" onclick="limparLocalStorage()">Limpar Tudo</button>
+        </div>
+
+        <div class="grid">
+            <button class="clear" onclick="limpar()">C</button>
+            <button class="operator" onclick="mostrarHistoricoCompleto()">🧾</button>
+            <button class="operator" onclick="definirOperacao('/')">÷</button>
+            <button class="operator" onclick="backspace()">⌫</button>
+
+            <button onclick="adicionarNumero('7')">7</button>
+            <button onclick="adicionarNumero('8')">8</button>
+            <button onclick="adicionarNumero('9')">9</button>
+            <button class="operator" onclick="definirOperacao('*')">×</button>
+
+            <button onclick="adicionarNumero('4')">4</button>
+            <button onclick="adicionarNumero('5')">5</button>
+            <button onclick="adicionarNumero('6')">6</button>
+            <button class="operator" onclick="definirOperacao('-')">−</button>
+
+            <button onclick="adicionarNumero('1')">1</button>
+            <button onclick="adicionarNumero('2')">2</button>
+            <button onclick="adicionarNumero('3')">3</button>
+            <button class="operator" onclick="definirOperacao('+')">+</button>
+
+            <button onclick="toggleSign()">±</button>
+            <button onclick="adicionarNumero('0')">0</button>
+            <button onclick="adicionarNumero('.')">,</button>
+            <button class="equals" onclick="calcular()">=</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
